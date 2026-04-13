@@ -1,0 +1,13 @@
+{
+  "name": "stash-local",
+  "owner": {
+    "name": "Jared Gizersky"
+  },
+  "plugins": [
+    {
+      "name": "stash",
+      "source": "./",
+      "description": "Bookmark, browse, and resume Claude Code sessions from a TUI"
+    }
+  ]
+}

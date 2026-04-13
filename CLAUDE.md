@@ -5,7 +5,7 @@ CLI/TUI for managing Claude Code sessions. Lets you name, bookmark ("stash"), br
 ## Architecture
 
 ```
-cmd/stash/main.go          CLI entry point (cobra). Subcommands: (default TUI), save, hook, install, uninstall, list
+cmd/stash/main.go          CLI entry point (cobra). Subcommands: (default TUI), save, hook, list
 internal/claude/sessions.go Session loading from ~/.claude/projects/*/*.jsonl. Parallel scanning with file-level cache (~/.stash/session-cache.json)
 internal/claude/cache.go    mtime+size-based cache for scanned JSONL metadata. Bump cacheVersion const if Session struct changes
 internal/claude/active.go   Reads ~/.claude/sessions/*.json for live processes (PID, alive check, cwd)
@@ -32,24 +32,18 @@ internal/tui/tui.go         Bubble Tea TUI. Three tabs (Stash/History/Active), u
 
 ## The hook
 
-`UserPromptSubmit` hook registered in `~/.claude/settings.json`. When user types `stash <name>`:
+Distributed as a Claude Code plugin via `hooks/hooks.json`. The `UserPromptSubmit` hook calls `stash hook` (must be on PATH). When user types `stash <name>`:
 
 1. Hook blocks the prompt (Claude never sees it)
 2. Sets `sessionTitle` natively via hook response (Claude writes `agent-name` to JSONL)  
 3. Writes session to `~/.stash/index.json`
 4. Finds Claude's PID from `~/.claude/sessions/*.json` and schedules `sleep 0.5 && kill -INT <pid>` to exit the session
 
-Hook format in settings.json:
-```json
-{"hooks": {"UserPromptSubmit": [{"matcher": "", "hooks": [{"type": "command", "command": "/usr/local/bin/stash hook"}]}]}}
-```
-
 ## Build & install
 
 ```
-go build ./cmd/stash/ && cp stash /usr/local/bin/stash
-stash install    # registers the hook
-stash uninstall  # removes the hook
+go install ./cmd/stash/                  # puts binary on GOPATH/bin
+claude --plugin-dir /path/to/stash       # test the plugin locally
 ```
 
 ## Session struct

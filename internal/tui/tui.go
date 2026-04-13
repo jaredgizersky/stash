@@ -249,6 +249,10 @@ func (m Model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.currentView == viewStash {
 			m.actionUnstash()
 		}
+	case "S":
+		if m.currentView == viewHistory || m.currentView == viewActive {
+			m.actionAddToStash()
+		}
 	}
 	return m, nil
 }
@@ -280,7 +284,7 @@ func (m Model) updatePreview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "escape", "esc":
 		m.currentView = m.previewReturnView
 		return m, nil
-	case "r":
+	case "r", "enter":
 		if m.previewSession != nil {
 			m.resumeID = m.previewSession.SessionID
 			m.resumeCwd = m.previewSession.ProjectPath
@@ -355,6 +359,50 @@ func (m *Model) actionUnstash() {
 	for i := range m.sessions {
 		if m.sessions[i].SessionID == s.SessionID {
 			m.sessions[i].Stashed = false
+		}
+	}
+	m.refilter()
+}
+
+func (m *Model) actionAddToStash() {
+	var sessionID, name, projectPath, gitBranch string
+
+	switch m.currentView {
+	case viewHistory:
+		if len(m.filtered) == 0 {
+			return
+		}
+		s := m.filtered[m.cursor]
+		sessionID = s.SessionID
+		name = s.Title()
+		projectPath = s.ProjectPath
+		gitBranch = s.GitBranch
+	case viewActive:
+		if len(m.filteredActive) == 0 {
+			return
+		}
+		a := m.filteredActive[m.cursor]
+		sessionID = a.SessionID
+		name = a.DisplayName()
+		projectPath = a.Cwd
+		if a.Linked != nil {
+			gitBranch = a.Linked.GitBranch
+		}
+	default:
+		return
+	}
+
+	m.stashIndex.Add(store.StashEntry{
+		SessionID:   sessionID,
+		Name:        name,
+		ProjectPath: projectPath,
+		GitBranch:   gitBranch,
+	})
+	_ = store.Save(m.stashIndex)
+
+	for i := range m.sessions {
+		if m.sessions[i].SessionID == sessionID {
+			m.sessions[i].Stashed = true
 		}
 	}
 	m.refilter()
@@ -776,7 +824,7 @@ func (m Model) viewPreview() string {
 	b.WriteString("\n")
 	b.WriteString(m.preview.View())
 	b.WriteString("\n")
-	b.WriteString(footerStyle.Render(" ↑↓ scroll • r resume • esc/q back"))
+	b.WriteString(footerStyle.Render(" ↑↓ scroll • enter/r resume • esc/q back"))
 
 	return b.String()
 }
@@ -832,6 +880,9 @@ func (m Model) buildFooter() string {
 	parts := []string{"↑↓/jk navigate", "enter preview", "r resume"}
 	if m.currentView == viewStash {
 		parts = append(parts, "d unstash")
+	}
+	if m.currentView == viewHistory || m.currentView == viewActive {
+		parts = append(parts, "S stash")
 	}
 	parts = append(parts, "/ filter", "tab scope", "n named", "←→ tabs", "q quit")
 	return " " + strings.Join(parts, " • ")

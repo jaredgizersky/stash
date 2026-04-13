@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/jared/stash/internal/claude"
@@ -40,18 +39,6 @@ func main() {
 		RunE:   runHook,
 	}
 
-	installCmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install the stash hook into Claude settings",
-		RunE:  runInstall,
-	}
-
-	uninstallCmd := &cobra.Command{
-		Use:   "uninstall",
-		Short: "Remove the stash hook from Claude settings",
-		RunE:  runUninstall,
-	}
-
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List stashed sessions (non-interactive)",
@@ -59,7 +46,7 @@ func main() {
 	}
 	listCmd.Flags().BoolP("all", "a", false, "Show sessions from all projects")
 
-	rootCmd.AddCommand(saveCmd, hookCmd, installCmd, uninstallCmd, listCmd)
+	rootCmd.AddCommand(saveCmd, hookCmd, listCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -243,160 +230,6 @@ func runHook(cmd *cobra.Command, args []string) error {
 		exec.Command("sh", "-c", fmt.Sprintf("sleep 0.5 && kill -INT %d 2>/dev/null", claudePID)).Start()
 	}
 
-	return nil
-}
-
-
-func runInstall(cmd *cobra.Command, args []string) error {
-	// Find the stash binary path
-	stashBin, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("finding stash binary: %w", err)
-	}
-	stashBin, _ = filepath.EvalSymlinks(stashBin)
-
-	hookCommand := stashBin + " hook"
-
-	// Add hook to Claude settings
-	settingsPath := filepath.Join(claude.ClaudeDir(), "settings.json")
-	data, err := os.ReadFile(settingsPath)
-	if err != nil {
-		return fmt.Errorf("reading Claude settings: %w", err)
-	}
-
-	var settings map[string]interface{}
-	if err := json.Unmarshal(data, &settings); err != nil {
-		return fmt.Errorf("parsing Claude settings: %w", err)
-	}
-
-	// Build hook entry in Claude's expected format:
-	// {"matcher": "", "hooks": [{"type": "command", "command": "..."}]}
-	hookEntry := map[string]interface{}{
-		"matcher": "",
-		"hooks": []interface{}{
-			map[string]interface{}{
-				"type":    "command",
-				"command": hookCommand,
-			},
-		},
-	}
-
-	// Get or create hooks map
-	hooks, _ := settings["hooks"].(map[string]interface{})
-	if hooks == nil {
-		hooks = make(map[string]interface{})
-	}
-
-	// Get or create UserPromptSubmit array
-	var submitEntries []interface{}
-	if existing, ok := hooks["UserPromptSubmit"].([]interface{}); ok {
-		// Remove any existing stash hook entries
-		for _, entry := range existing {
-			em, ok := entry.(map[string]interface{})
-			if !ok {
-				submitEntries = append(submitEntries, entry)
-				continue
-			}
-			// Check if any hook in this entry is a stash hook
-			isStash := false
-			if innerHooks, ok := em["hooks"].([]interface{}); ok {
-				for _, ih := range innerHooks {
-					ihm, ok := ih.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					cmd, _ := ihm["command"].(string)
-					if strings.Contains(cmd, "stash hook") || strings.Contains(cmd, "stash-hook") {
-						isStash = true
-						break
-					}
-				}
-			}
-			if !isStash {
-				submitEntries = append(submitEntries, entry)
-			}
-		}
-	}
-	submitEntries = append(submitEntries, hookEntry)
-	hooks["UserPromptSubmit"] = submitEntries
-	settings["hooks"] = hooks
-
-	out, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshaling settings: %w", err)
-	}
-
-	if err := os.WriteFile(settingsPath, out, 0644); err != nil {
-		return fmt.Errorf("writing Claude settings: %w", err)
-	}
-
-	fmt.Println("Installed stash hook into Claude settings.")
-	fmt.Println("Now type \"stash <name>\" in any Claude session to name and exit it.")
-	fmt.Println("Hook command:", hookCommand)
-
-	return nil
-}
-
-func runUninstall(cmd *cobra.Command, args []string) error {
-	settingsPath := filepath.Join(claude.ClaudeDir(), "settings.json")
-	data, err := os.ReadFile(settingsPath)
-	if err != nil {
-		return fmt.Errorf("reading Claude settings: %w", err)
-	}
-
-	var settings map[string]interface{}
-	if err := json.Unmarshal(data, &settings); err != nil {
-		return fmt.Errorf("parsing Claude settings: %w", err)
-	}
-
-	if hooks, ok := settings["hooks"].(map[string]interface{}); ok {
-		if existing, ok := hooks["UserPromptSubmit"].([]interface{}); ok {
-			var kept []interface{}
-			for _, entry := range existing {
-				em, ok := entry.(map[string]interface{})
-				if !ok {
-					kept = append(kept, entry)
-					continue
-				}
-				isStash := false
-				if innerHooks, ok := em["hooks"].([]interface{}); ok {
-					for _, ih := range innerHooks {
-						ihm, ok := ih.(map[string]interface{})
-						if !ok {
-							continue
-						}
-						c, _ := ihm["command"].(string)
-						if strings.Contains(c, "stash hook") || strings.Contains(c, "stash-hook") {
-							isStash = true
-							break
-						}
-					}
-				}
-				if !isStash {
-					kept = append(kept, entry)
-				}
-			}
-			if len(kept) == 0 {
-				delete(hooks, "UserPromptSubmit")
-			} else {
-				hooks["UserPromptSubmit"] = kept
-			}
-			if len(hooks) == 0 {
-				delete(settings, "hooks")
-			}
-		}
-	}
-
-	out, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshaling settings: %w", err)
-	}
-
-	if err := os.WriteFile(settingsPath, out, 0644); err != nil {
-		return fmt.Errorf("writing Claude settings: %w", err)
-	}
-
-	fmt.Println("Uninstalled stash hook from Claude settings.")
 	return nil
 }
 
