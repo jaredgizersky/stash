@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/jared/stash/internal/claude"
+	"github.com/jared/stash/internal/codex"
 	"github.com/jared/stash/internal/store"
 	"github.com/jared/stash/internal/tui"
 	"github.com/spf13/cobra"
@@ -66,6 +68,18 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("loading sessions: %w", err)
 	}
+	for i := range sessions {
+		if sessions[i].Source == "" {
+			sessions[i].Source = "claude"
+		}
+	}
+
+	codexSessions, _ := codex.LoadAllSessions()
+	sessions = append(sessions, codexSessions...)
+
+	sort.Slice(sessions, func(i, j int) bool {
+		return sessions[i].Modified.After(sessions[j].Modified)
+	})
 
 	active, err := claude.LoadActiveSessions()
 	if err != nil {
@@ -73,18 +87,22 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(sessions) == 0 && len(active) == 0 {
-		fmt.Println("No Claude sessions found.")
+		fmt.Println("No sessions found.")
 		return nil
 	}
 
-	sessionID, resumeCwd, err := tui.Run(sessions, active, stashIdx, cwd, showAll)
+	sessionID, resumeCwd, source, err := tui.Run(sessions, active, stashIdx, cwd, showAll)
 	if err != nil {
 		return err
 	}
 
 	if sessionID != "" {
-		fmt.Printf("Resuming session %s...\n", sessionID[:8])
-		return tui.Resume(sessionID, resumeCwd)
+		if source == "codex" {
+			fmt.Printf("Resuming Codex session %s...\n", sessionID[:8])
+		} else {
+			fmt.Printf("Resuming session %s...\n", sessionID[:8])
+		}
+		return tui.Resume(sessionID, resumeCwd, source)
 	}
 
 	return nil
@@ -250,18 +268,41 @@ func runList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("loading sessions: %w", err)
 	}
+	for i := range sessions {
+		if sessions[i].Source == "" {
+			sessions[i].Source = "claude"
+		}
+	}
+
+	codexSessions, _ := codex.LoadAllSessions()
+	if showAll {
+		sessions = append(sessions, codexSessions...)
+	} else {
+		for _, s := range codexSessions {
+			if s.ProjectPath == cwd {
+				sessions = append(sessions, s)
+			}
+		}
+	}
+	sort.Slice(sessions, func(i, j int) bool {
+		return sessions[i].Modified.After(sessions[j].Modified)
+	})
 
 	if len(sessions) == 0 {
 		fmt.Println("No sessions found.")
 		return nil
 	}
 
-	claude.ApplyStashNames(sessions, stashIdx.NameMap())
+	claude.ApplyStashNames(sessions, stashIdx.NameMap(), stashIdx.SourceMap())
 
-	fmt.Printf("%-12s  %-50s  %5s  %s\n", "DATE", "TITLE", "MSGS", "BRANCH")
-	fmt.Println(repeatStr("─", 100))
+	fmt.Printf("%-12s  %-6s  %-50s  %5s  %s\n", "DATE", "SRC", "TITLE", "MSGS", "BRANCH")
+	fmt.Println(repeatStr("─", 106))
 
 	for _, s := range sessions {
+		src := s.Source
+		if src == "" {
+			src = "claude"
+		}
 		title := s.Title()
 		if len(title) > 50 {
 			title = title[:49] + "…"
@@ -271,7 +312,8 @@ func runList(cmd *cobra.Command, args []string) error {
 			branch = branch[:29] + "…"
 		}
 		date := s.Modified.Format("Jan 02 15:04")
-		fmt.Printf("%-12s  %-50s  %5d  %s\n", date, title, s.MsgCount, branch)
+		msgs := fmt.Sprintf("%d", s.MsgCount)
+		fmt.Printf("%-12s  %-6s  %-50s  %5s  %s\n", date, src, title, msgs, branch)
 	}
 
 	return nil

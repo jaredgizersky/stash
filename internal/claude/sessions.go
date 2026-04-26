@@ -23,6 +23,8 @@ type Session struct {
 	GitBranch   string    `json:"gitBranch"`
 	ProjectPath string    `json:"projectPath"`
 	IsSidechain bool      `json:"isSidechain"`
+	Source      string    `json:"source"`      // "claude" or "codex"
+	Model       string    `json:"model,omitempty"`
 
 	// Enriched
 	Name    string `json:"name,omitempty"` // best name: stash name > agent name > empty
@@ -268,8 +270,11 @@ func scanJSONLMeta(path string) jsonlMeta {
 			}
 		}
 
-		// Count user/assistant messages
-		if msgType == "user" || msgType == "assistant" {
+		// Count user/assistant messages, excluding tool-only turns
+		if msgType == "user" && !hasToolResult(msg) {
+			meta.msgCount++
+		}
+		if msgType == "assistant" && hasText(msg) {
 			meta.msgCount++
 		}
 
@@ -370,6 +375,27 @@ func hasToolResult(msg map[string]interface{}) bool {
 		b, _ := block.(map[string]interface{})
 		if b["type"] == "tool_result" {
 			return true
+		}
+	}
+	return false
+}
+
+// hasText reports whether a user/assistant message has any non-empty text block.
+// Plain string content also counts as text.
+func hasText(msg map[string]interface{}) bool {
+	message, _ := msg["message"].(map[string]interface{})
+	switch content := message["content"].(type) {
+	case string:
+		return strings.TrimSpace(content) != ""
+	case []interface{}:
+		for _, block := range content {
+			b, _ := block.(map[string]interface{})
+			if b["type"] != "text" {
+				continue
+			}
+			if text, _ := b["text"].(string); strings.TrimSpace(text) != "" {
+				return true
+			}
 		}
 	}
 	return false
@@ -487,11 +513,14 @@ func truncate(s string, max int) string {
 }
 
 // ApplyStashNames stamps stash names and the Stashed flag onto sessions.
-func ApplyStashNames(sessions []Session, nameMap map[string]string) {
+func ApplyStashNames(sessions []Session, nameMap map[string]string, sourceMap map[string]string) {
 	for i := range sessions {
 		if name, ok := nameMap[sessions[i].SessionID]; ok {
 			sessions[i].Name = name
 			sessions[i].Stashed = true
+		}
+		if src, ok := sourceMap[sessions[i].SessionID]; ok && sessions[i].Source == "" {
+			sessions[i].Source = src
 		}
 	}
 }

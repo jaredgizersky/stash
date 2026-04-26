@@ -1,16 +1,18 @@
 # stash
 
-CLI/TUI for managing Claude Code sessions. Lets you name, bookmark ("stash"), browse, preview transcripts, and resume sessions.
+CLI/TUI for managing Claude Code and Codex sessions. Lets you name, bookmark ("stash"), browse, preview transcripts, and resume sessions.
 
 ## Architecture
 
 ```
-cmd/stash/main.go          CLI entry point (cobra). Subcommands: (default TUI), save, hook, list
-internal/claude/sessions.go Session loading from ~/.claude/projects/*/*.jsonl. Parallel scanning with file-level cache (~/.stash/session-cache.json)
-internal/claude/cache.go    mtime+size-based cache for scanned JSONL metadata. Bump cacheVersion const if Session struct changes
-internal/claude/active.go   Reads ~/.claude/sessions/*.json for live processes (PID, alive check, cwd)
-internal/store/store.go     Stash index (~/.stash/index.json) — the ledger of explicitly stashed sessions
-internal/tui/tui.go         Bubble Tea TUI. Three tabs (Stash/History/Active), unified update handler, transcript preview
+cmd/stash/main.go            CLI entry point (cobra). Subcommands: (default TUI), save, hook, list
+internal/claude/sessions.go   Session loading from ~/.claude/projects/*/*.jsonl. Parallel scanning with file-level cache (~/.stash/session-cache.json)
+internal/claude/cache.go      mtime+size-based cache for scanned JSONL metadata. Bump cacheVersion const if Session struct changes
+internal/claude/active.go     Reads ~/.claude/sessions/*.json for live processes (PID, alive check, cwd)
+internal/codex/sessions.go    Codex session loading from ~/.codex/state_5.sqlite (threads table). Pure-Go SQLite via modernc.org/sqlite
+internal/codex/transcript.go  Codex JSONL transcript reader (response_item format → TranscriptEntry)
+internal/store/store.go       Stash index (~/.stash/index.json) — the ledger of explicitly stashed sessions
+internal/tui/tui.go           Bubble Tea TUI. Three tabs (Stash/History/Active), unified update handler, transcript preview
 ```
 
 ## How Claude sessions work
@@ -50,6 +52,8 @@ claude --plugin-dir /path/to/stash       # test the plugin locally
 
 Single `Name` field (best name wins: stash name > native agent-name > empty). `Stashed` bool set at runtime from the index. `StashName`/`NativeName` were consolidated — don't re-split them.
 
+`Source` field: `"claude"` or `"codex"`. Used to route resume commands and select the right transcript parser. `Model` field stores the model name (populated for Codex sessions from SQLite).
+
 ## Cache invalidation
 
 Cache keys on JSONL file path + mtime + size. If the Session struct shape changes (new fields to extract), bump `cacheVersion` in cache.go or delete `~/.stash/session-cache.json`.
@@ -66,6 +70,12 @@ Cache keys on JSONL file path + mtime + size. If the Session struct shape change
 - `/`: search filter
 - `q`/`esc`: quit
 
-## Future: Codex support
+## Codex support
 
-Not yet implemented. Codex sessions would need a separate loader but could share the same TUI and stash index.
+Codex sessions are loaded from `~/.codex/state_5.sqlite` (threads table) — no JSONL scanning needed since Codex pre-indexes everything in SQLite. Only top-level sessions are shown (source IN cli/exec/vscode); subagent threads are filtered out.
+
+- Session names: threads with `title != first_user_message` get the title as their Name
+- Transcripts: Codex JSONL uses `response_item` events with `input_text`/`output_text` content blocks and `function_call` for tool use
+- Resume: `codex resume <session-id>` (vs `claude --resume <session-id>`)
+- Message counts: not tracked in Codex's DB, shown as `-` in the TUI
+- Stash index: `StashEntry.Source` field distinguishes Codex sessions for resume routing. Empty/missing defaults to "claude" for backward compat.

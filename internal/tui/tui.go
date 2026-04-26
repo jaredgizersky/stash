@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jared/stash/internal/claude"
+	"github.com/jared/stash/internal/codex"
 	"github.com/jared/stash/internal/store"
 )
 
@@ -53,6 +54,7 @@ type Model struct {
 	previewReturnView view
 	resumeID          string
 	resumeCwd         string
+	resumeSource      string
 }
 
 func New(sessions []claude.Session, active []claude.ActiveSession, stashIdx *store.StashIndex, cwd string, showAll bool) Model {
@@ -60,7 +62,7 @@ func New(sessions []claude.Session, active []claude.ActiveSession, stashIdx *sto
 	ti.Placeholder = "filter..."
 	ti.CharLimit = 100
 
-	claude.ApplyStashNames(sessions, stashIdx.NameMap())
+	claude.ApplyStashNames(sessions, stashIdx.NameMap(), stashIdx.SourceMap())
 	claude.LinkTranscripts(active, sessions)
 
 	m := Model{
@@ -288,6 +290,7 @@ func (m Model) updatePreview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.previewSession != nil {
 			m.resumeID = m.previewSession.SessionID
 			m.resumeCwd = m.previewSession.ProjectPath
+			m.resumeSource = m.previewSession.Source
 			return m, tea.Quit
 		}
 	}
@@ -329,6 +332,7 @@ func (m Model) actionResume() (tea.Model, tea.Cmd) {
 			s := m.stashed[m.cursor]
 			m.resumeID = s.SessionID
 			m.resumeCwd = s.ProjectPath
+			m.resumeSource = s.Source
 			return m, tea.Quit
 		}
 	case viewHistory:
@@ -336,6 +340,7 @@ func (m Model) actionResume() (tea.Model, tea.Cmd) {
 			s := m.filtered[m.cursor]
 			m.resumeID = s.SessionID
 			m.resumeCwd = s.ProjectPath
+			m.resumeSource = s.Source
 			return m, tea.Quit
 		}
 	case viewActive:
@@ -365,7 +370,7 @@ func (m *Model) actionUnstash() {
 }
 
 func (m *Model) actionAddToStash() {
-	var sessionID, name, projectPath, gitBranch string
+	var sessionID, name, projectPath, gitBranch, source string
 
 	switch m.currentView {
 	case viewHistory:
@@ -377,6 +382,7 @@ func (m *Model) actionAddToStash() {
 		name = s.Title()
 		projectPath = s.ProjectPath
 		gitBranch = s.GitBranch
+		source = s.Source
 	case viewActive:
 		if len(m.filteredActive) == 0 {
 			return
@@ -397,6 +403,7 @@ func (m *Model) actionAddToStash() {
 		Name:        name,
 		ProjectPath: projectPath,
 		GitBranch:   gitBranch,
+		Source:      source,
 	})
 	_ = store.Save(m.stashIndex)
 
@@ -436,13 +443,19 @@ func (m *Model) switchTo(v view) {
 }
 
 func (m *Model) openPreviewForSession(s *claude.Session) (tea.Model, tea.Cmd) {
-	entries, err := claude.ReadTranscript(s.FullPath)
+	var entries []claude.TranscriptEntry
+	var err error
+	if s.Source == "codex" {
+		entries, err = codex.ReadTranscript(s.FullPath)
+	} else {
+		entries, err = claude.ReadTranscript(s.FullPath)
+	}
 
 	var content string
 	if err != nil || len(entries) == 0 {
 		content = "(no transcript available)"
 	} else {
-		content = renderTranscript(entries, m.width-4)
+		content = renderTranscript(entries, m.width-4, s.Source)
 	}
 
 	vp := viewport.New(m.width, m.height-4)
@@ -476,8 +489,8 @@ func (m Model) listHeight() int {
 	return h
 }
 
-func (m Model) ResumeInfo() (sessionID, cwd string) {
-	return m.resumeID, m.resumeCwd
+func (m Model) ResumeInfo() (sessionID, cwd, source string) {
+	return m.resumeID, m.resumeCwd, m.resumeSource
 }
 
 // --- View ---
@@ -630,16 +643,16 @@ func (m Model) viewSessionList() string {
 }
 
 func (m Model) calcSessionWidths(showProject bool) colWidths {
-	c := colWidths{date: 12, msgs: 5}
+	c := colWidths{date: 12, msgs: 5, source: 6}
 
 	if showProject {
-		fixed := c.date + c.msgs + 9
+		fixed := c.date + c.msgs + c.source + 11
 		remaining := m.width - fixed
 		c.project = max(remaining*30/100, 12)
 		c.branch = max(remaining*25/100, 10)
 		c.title = max(remaining-c.project-c.branch, 16)
 	} else {
-		fixed := c.date + c.msgs + 7
+		fixed := c.date + c.msgs + c.source + 9
 		remaining := m.width - fixed
 		c.branch = max(min(remaining*30/100, 30), 10)
 		c.title = max(remaining-c.branch, 16)
@@ -648,23 +661,28 @@ func (m Model) calcSessionWidths(showProject bool) colWidths {
 }
 
 type colWidths struct {
-	date, title, project, msgs, branch int
+	date, title, project, msgs, branch, source int
 }
 
 func (m Model) renderSessionHeader(showProject bool) string {
 	c := m.calcSessionWidths(showProject)
 	if showProject {
-		return headerStyle.Render(fmt.Sprintf(" %-*s  %-*s  %-*s  %*s  %-*s",
-			c.date, "DATE", c.title, "TITLE", c.project, "PROJECT", c.msgs, "MSGS", c.branch, "BRANCH"))
+		return headerStyle.Render(fmt.Sprintf(" %-*s  %-*s  %-*s  %-*s  %*s  %-*s",
+			c.date, "DATE", c.source, "SRC", c.title, "TITLE", c.project, "PROJECT", c.msgs, "MSGS", c.branch, "BRANCH"))
 	}
-	return headerStyle.Render(fmt.Sprintf(" %-*s  %-*s  %*s  %-*s",
-		c.date, "DATE", c.title, "TITLE", c.msgs, "MSGS", c.branch, "BRANCH"))
+	return headerStyle.Render(fmt.Sprintf(" %-*s  %-*s  %-*s  %*s  %-*s",
+		c.date, "DATE", c.source, "SRC", c.title, "TITLE", c.msgs, "MSGS", c.branch, "BRANCH"))
 }
 
 func (m Model) renderSessionRow(s claude.Session, selected, showProject bool) string {
 	c := m.calcSessionWidths(showProject)
 
 	date := relativeDate(s.Modified)
+
+	src := s.Source
+	if src == "" {
+		src = "claude"
+	}
 
 	title := s.Title()
 	if s.HasName() {
@@ -679,17 +697,19 @@ func (m Model) renderSessionRow(s claude.Session, selected, showProject bool) st
 		branch = branch[:c.branch-1] + "…"
 	}
 
+	msgs := fmt.Sprintf("%d", s.MsgCount)
+
 	var row string
 	if showProject {
 		proj := s.ShortProject()
 		if len(proj) > c.project {
 			proj = "…" + proj[len(proj)-c.project+1:]
 		}
-		row = fmt.Sprintf(" %-*s  %-*s  %-*s  %*d  %-*s",
-			c.date, date, c.title, title, c.project, proj, c.msgs, s.MsgCount, c.branch, branch)
+		row = fmt.Sprintf(" %-*s  %-*s  %-*s  %-*s  %*s  %-*s",
+			c.date, date, c.source, src, c.title, title, c.project, proj, c.msgs, msgs, c.branch, branch)
 	} else {
-		row = fmt.Sprintf(" %-*s  %-*s  %*d  %-*s",
-			c.date, date, c.title, title, c.msgs, s.MsgCount, c.branch, branch)
+		row = fmt.Sprintf(" %-*s  %-*s  %-*s  %*s  %-*s",
+			c.date, date, c.source, src, c.title, title, c.msgs, msgs, c.branch, branch)
 	}
 
 	if len(row) > m.width {
@@ -829,7 +849,7 @@ func (m Model) viewPreview() string {
 	return b.String()
 }
 
-func renderTranscript(entries []claude.TranscriptEntry, width int) string {
+func renderTranscript(entries []claude.TranscriptEntry, width int, source string) string {
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(width-4),
@@ -859,7 +879,11 @@ func renderTranscript(entries []claude.TranscriptEntry, width int) string {
 			b.WriteString("\n")
 			b.WriteString(text)
 		case "assistant":
-			b.WriteString(previewAssistantStyle.Render("Claude:"))
+			label := "Claude:"
+			if source == "codex" {
+				label = "Codex:"
+			}
+			b.WriteString(previewAssistantStyle.Render(label))
 			b.WriteString("\n")
 			if renderer != nil {
 				rendered, err := renderer.Render(text)
@@ -909,38 +933,47 @@ func relativeDate(t time.Time) string {
 
 // --- Public API ---
 
-func Run(sessions []claude.Session, active []claude.ActiveSession, stashIdx *store.StashIndex, cwd string, showAll bool) (string, string, error) {
+func Run(sessions []claude.Session, active []claude.ActiveSession, stashIdx *store.StashIndex, cwd string, showAll bool) (string, string, string, error) {
 	m := New(sessions, active, stashIdx, cwd, showAll)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	result, err := p.Run()
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	final := result.(Model)
-	sid, cwdPath := final.ResumeInfo()
-	return sid, cwdPath, nil
+	sid, cwdPath, source := final.ResumeInfo()
+	return sid, cwdPath, source, nil
 }
 
-func Resume(sessionID, cwd string) error {
-	claudeBin, err := findClaude()
-	if err != nil {
-		return err
-	}
+func Resume(sessionID, cwd, source string) error {
 	if cwd != "" {
 		if err := os.Chdir(cwd); err != nil {
 			return fmt.Errorf("cd to %s: %w", cwd, err)
 		}
 	}
-	return syscall.Exec(claudeBin, []string{"claude", "--resume", sessionID, "--dangerously-skip-permissions"}, os.Environ())
+
+	if source == "codex" {
+		bin, err := findBinary("codex")
+		if err != nil {
+			return err
+		}
+		return syscall.Exec(bin, []string{"codex", "resume", sessionID}, os.Environ())
+	}
+
+	bin, err := findBinary("claude")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(bin, []string{"claude", "--resume", sessionID, "--dangerously-skip-permissions"}, os.Environ())
 }
 
-func findClaude() (string, error) {
+func findBinary(name string) (string, error) {
 	pathEnv := os.Getenv("PATH")
 	for _, dir := range strings.Split(pathEnv, ":") {
-		p := dir + "/claude"
+		p := dir + "/" + name
 		if _, err := os.Stat(p); err == nil {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("claude binary not found in PATH")
+	return "", fmt.Errorf("%s binary not found in PATH", name)
 }

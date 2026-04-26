@@ -19,7 +19,7 @@ type CacheEntry struct {
 	Session Session `json:"session"`
 }
 
-const cacheVersion = 1
+const cacheVersion = 3
 
 func cachePath() string {
 	home, _ := os.UserHomeDir()

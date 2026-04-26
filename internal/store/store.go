@@ -13,6 +13,7 @@ type StashEntry struct {
 	ProjectPath string `json:"projectPath"`
 	GitBranch   string `json:"gitBranch"`
 	StashedAt   string `json:"stashedAt"`
+	Source      string `json:"source,omitempty"` // "claude" (default) or "codex"
 }
 
 type StashIndex struct {
@@ -106,6 +107,17 @@ func (idx *StashIndex) NameMap() map[string]string {
 	m := make(map[string]string, len(idx.Entries))
 	for _, e := range idx.Entries {
 		m[e.SessionID] = e.Name
+	}
+	return m
+}
+
+// SourceMap returns a map of sessionID -> source for quick lookup
+func (idx *StashIndex) SourceMap() map[string]string {
+	m := make(map[string]string, len(idx.Entries))
+	for _, e := range idx.Entries {
+		if e.Source != "" {
+			m[e.SessionID] = e.Source
+		}
 	}
 	return m
 }
