@@ -1,0 +1,6 @@
+{"timestamp":"2026-03-04T01:02:19Z","type":"session_meta","payload":{"id":"codex-fixture-session","timestamp":"2026-03-04T01:02:18Z","cwd":"/tmp/stash-fixture","originator":"codex_cli_rs","cli_version":"0.107.0","model_provider":"openai"}}
+{"timestamp":"2026-03-04T01:02:19Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"Developer instructions are not transcript chat."}]}}
+{"timestamp":"2026-03-04T01:02:19Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md\n\nRepository instructions."}]}}
+{"timestamp":"2026-03-04T01:02:20Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Please inspect the parser fixtures."}]}}
+{"timestamp":"2026-03-04T01:02:21Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"I will check the fixtures."}]}}
+{"timestamp":"2026-03-04T01:02:22Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"go test ./internal/codex\",\"workdir\":\"/tmp/stash-fixture\"}"}}
