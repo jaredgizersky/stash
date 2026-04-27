@@ -49,6 +49,16 @@ Inside Claude Code:
 !stash save "name"
 ```
 
+## Codex
+
+No Codex plugin is needed. Once the `codex` CLI has local sessions, `stash` reads them from `~/.codex/state_5.sqlite` and resumes them with:
+
+```sh
+codex resume <session-id>
+```
+
+Make sure `codex` is on `PATH` if you want resume to work from the TUI.
+
 ## Claude Code Plugin
 
 The plugin lets you type `stash` or `stash <name>` inside Claude Code. The prompt is intercepted locally, the session is saved to `~/.stash/index.json`, and the Claude session exits so you can resume it later from `stash`.
