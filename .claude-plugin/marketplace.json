@@ -1,5 +1,8 @@
 {
-  "name": "stash-local",
+  "name": "stash",
+  "metadata": {
+    "description": "Claude Code hook for stashing and resuming local Claude Code and Codex sessions"
+  },
   "owner": {
     "name": "Jared Gizersky"
   },

@@ -74,16 +74,65 @@ stash <name>
 
 When triggered, the hook blocks the prompt from reaching Claude, saves the session into `~/.stash/index.json`, updates the Claude session title when a name is provided, and exits the current Claude session so you can pick it back up later from `stash`.
 
-To try the plugin locally:
+The Claude Code plugin only installs the hook configuration. Install the `stash` CLI first and make sure it is on `PATH`, because the hook command is:
+
+```sh
+stash hook
+```
+
+### Install From GitHub
+
+After this repository is public, add it as a Claude Code plugin marketplace:
+
+```sh
+/plugin marketplace add jaredgizersky/stash
+/plugin install stash@stash
+/reload-plugins
+```
+
+You can also do the same non-interactively:
+
+```sh
+claude plugin marketplace add jaredgizersky/stash
+claude plugin install stash@stash
+```
+
+Claude Code installs plugins to user scope by default. To share the marketplace or plugin through a project repository, install with project scope:
+
+```sh
+claude plugin marketplace add jaredgizersky/stash --scope project
+claude plugin install stash@stash --scope project
+```
+
+The marketplace is defined at `.claude-plugin/marketplace.json`. Its plugin source is a relative path to this repository root, which works when the marketplace is added from GitHub.
+
+### Local Plugin Development
+
+To test the plugin directly from a checkout:
 
 ```sh
 claude --plugin-dir /path/to/stash
 ```
 
-Make sure the `stash` binary is installed and available on `PATH`, because the hook command is:
+Or add the local checkout as a marketplace:
 
 ```sh
-stash hook
+/plugin marketplace add /path/to/stash
+/plugin install stash@stash
+```
+
+### Updates
+
+Update the CLI with:
+
+```sh
+go install github.com/jaredgizersky/stash/cmd/stash@latest
+```
+
+Update the Claude Code plugin with:
+
+```sh
+/plugin update stash
 ```
 
 ## Codex Support
