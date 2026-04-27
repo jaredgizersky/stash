@@ -26,6 +26,13 @@ From a checkout:
 go install ./cmd/stash
 ```
 
+Release archives are published from tags:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Use
 
 ```sh
