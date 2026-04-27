@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jared/stash/internal/claude"
-	"github.com/jared/stash/internal/codex"
-	"github.com/jared/stash/internal/store"
-	"github.com/jared/stash/internal/tui"
+	"github.com/jaredgizersky/stash/internal/claude"
+	"github.com/jaredgizersky/stash/internal/codex"
+	"github.com/jaredgizersky/stash/internal/store"
+	"github.com/jaredgizersky/stash/internal/tui"
 	"github.com/spf13/cobra"
 )
 

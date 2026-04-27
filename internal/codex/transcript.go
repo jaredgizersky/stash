@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jared/stash/internal/claude"
+	"github.com/jaredgizersky/stash/internal/claude"
 )
 
 // ReadTranscript extracts human-readable messages from a Codex session JSONL file.

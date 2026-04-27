@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jared/stash/internal/claude"
+	"github.com/jaredgizersky/stash/internal/claude"
 	_ "modernc.org/sqlite"
 )
 

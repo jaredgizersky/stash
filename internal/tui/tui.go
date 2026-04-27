@@ -12,9 +12,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jared/stash/internal/claude"
-	"github.com/jared/stash/internal/codex"
-	"github.com/jared/stash/internal/store"
+	"github.com/jaredgizersky/stash/internal/claude"
+	"github.com/jaredgizersky/stash/internal/codex"
+	"github.com/jaredgizersky/stash/internal/store"
 )
 
 type view int
