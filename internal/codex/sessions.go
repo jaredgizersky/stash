@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,7 +64,7 @@ func LoadAllSessions() ([]claude.Session, error) {
 
 		name := ""
 		if title != firstMsg && title != "" {
-			name = title
+			name = sanitize(title)
 		}
 
 		sessions = append(sessions, claude.Session{
@@ -135,7 +136,15 @@ func LoadSessionsForProject(projectDir string) ([]claude.Session, error) {
 	return filtered, nil
 }
 
+func sanitize(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\t", " ")
+	return strings.TrimSpace(s)
+}
+
 func truncate(s string, max int) string {
+	s = sanitize(s)
 	if len(s) <= max {
 		return s
 	}

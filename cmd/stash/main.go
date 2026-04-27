@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -187,6 +188,8 @@ func runHook(cmd *cobra.Command, args []string) error {
 		return nil // pass through silently
 	}
 
+	isCodex := detectSource(input.TranscriptPath) == "codex"
+
 	var name string
 	if strings.HasPrefix(promptLower, "stash ") {
 		name = strings.TrimSpace(prompt[6:]) // strip "stash "
@@ -194,8 +197,12 @@ func runHook(cmd *cobra.Command, args []string) error {
 
 	// Bare "stash" with no name — use the session's existing name
 	if name == "" {
-		meta := claude.ScanSessionName(input.TranscriptPath)
-		if meta == "" {
+		if isCodex {
+			name = codex.LookupThreadName(input.SessionID)
+		} else {
+			name = claude.ScanSessionName(input.TranscriptPath)
+		}
+		if name == "" {
 			out := hookOutput{
 				Decision: "block",
 				Reason:   "Session has no name. Use \"stash <name>\" to give it one.",
@@ -205,36 +212,47 @@ func runHook(cmd *cobra.Command, args []string) error {
 			}
 			return json.NewEncoder(os.Stdout).Encode(out)
 		}
-		name = meta
 	}
 
 	// Write to stash index
+	source := "claude"
+	if isCodex {
+		source = "codex"
+	}
 	stashIdx, _ := store.Load()
 	stashIdx.Add(store.StashEntry{
 		SessionID:   input.SessionID,
 		Name:        name,
 		ProjectPath: input.Cwd,
+		Source:      source,
 	})
 	_ = store.Save(stashIdx)
 
-	// Find the Claude PID for this session so we can exit it
-	active, _ := claude.LoadActiveSessions()
-	var claudePID int
-	for _, a := range active {
-		if a.SessionID == input.SessionID {
-			claudePID = a.PID
-			break
-		}
+	if isCodex {
+		codex.AppendThreadName(input.SessionID, name)
+		codex.UpdateThreadTitle(input.SessionID, name)
 	}
 
-	// Output the hook response — rename the session
-	out := hookOutput{
-		Decision: "block",
-		Reason:   fmt.Sprintf("Session stashed as \"%s\". Exiting...", name),
-		Output: hookSpecOutput{
-			HookEventName: "UserPromptSubmit",
-			SessionTitle:  name,
-		},
+	// Output the hook response
+	reason := fmt.Sprintf("Session stashed as \"%s\". Exiting...", name)
+	var out hookOutput
+	if isCodex {
+		out = hookOutput{
+			Decision: "block",
+			Reason:   reason,
+			Output: hookSpecOutput{
+				HookEventName: "UserPromptSubmit",
+			},
+		}
+	} else {
+		out = hookOutput{
+			Decision: "block",
+			Reason:   reason,
+			Output: hookSpecOutput{
+				HookEventName: "UserPromptSubmit",
+				SessionTitle:  name,
+			},
+		}
 	}
 
 	enc := json.NewEncoder(os.Stdout)
@@ -242,13 +260,33 @@ func runHook(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Schedule a delayed SIGINT to exit the Claude session
-	// The delay gives Claude time to process the title rename
-	if claudePID > 0 {
-		exec.Command("sh", "-c", fmt.Sprintf("sleep 0.5 && kill -INT %d 2>/dev/null", claudePID)).Start()
+	// Schedule a delayed SIGINT to exit the session
+	var pid int
+	if isCodex {
+		pid = os.Getppid()
+	} else {
+		active, _ := claude.LoadActiveSessions()
+		for _, a := range active {
+			if a.SessionID == input.SessionID {
+				pid = a.PID
+				break
+			}
+		}
+	}
+	if pid > 0 {
+		exec.Command("sh", "-c", fmt.Sprintf("sleep 0.5 && kill -INT %d 2>/dev/null", pid)).Start()
 	}
 
 	return nil
+}
+
+func detectSource(transcriptPath string) string {
+	home, _ := os.UserHomeDir()
+	codexPrefix := filepath.Join(home, ".codex")
+	if strings.HasPrefix(transcriptPath, codexPrefix) {
+		return "codex"
+	}
+	return "claude"
 }
 
 func runList(cmd *cobra.Command, args []string) error {
