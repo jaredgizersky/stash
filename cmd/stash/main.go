@@ -219,18 +219,28 @@ func runHook(cmd *cobra.Command, args []string) error {
 	if isCodex {
 		source = "codex"
 	}
-	stashIdx, _ := store.Load()
+	stashIdx, err := store.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stash: failed to load stash index: %v\n", err)
+		stashIdx = &store.StashIndex{}
+	}
 	stashIdx.Add(store.StashEntry{
 		SessionID:   input.SessionID,
 		Name:        name,
 		ProjectPath: input.Cwd,
 		Source:      source,
 	})
-	_ = store.Save(stashIdx)
+	if err := store.Save(stashIdx); err != nil {
+		fmt.Fprintf(os.Stderr, "stash: failed to save stash index: %v\n", err)
+	}
 
 	if isCodex {
-		codex.AppendThreadName(input.SessionID, name)
-		codex.UpdateThreadTitle(input.SessionID, name)
+		if err := codex.AppendThreadName(input.SessionID, name); err != nil {
+			fmt.Fprintf(os.Stderr, "stash: failed to append Codex thread name: %v\n", err)
+		}
+		if err := codex.UpdateThreadTitle(input.SessionID, name); err != nil {
+			fmt.Fprintf(os.Stderr, "stash: failed to update Codex thread title: %v\n", err)
+		}
 	}
 
 	// Output the hook response
@@ -265,7 +275,10 @@ func runHook(cmd *cobra.Command, args []string) error {
 	if isCodex {
 		pid = os.Getppid()
 	} else {
-		active, _ := claude.LoadActiveSessions()
+		active, err := claude.LoadActiveSessions()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "stash: failed to load active Claude sessions: %v\n", err)
+		}
 		for _, a := range active {
 			if a.SessionID == input.SessionID {
 				pid = a.PID
@@ -274,7 +287,9 @@ func runHook(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if pid > 0 {
-		exec.Command("sh", "-c", fmt.Sprintf("sleep 0.5 && kill -INT %d 2>/dev/null", pid)).Start()
+		if err := exec.Command("sh", "-c", fmt.Sprintf("sleep 0.5 && kill -INT %d 2>/dev/null", pid)).Start(); err != nil {
+			fmt.Fprintf(os.Stderr, "stash: failed to schedule session interrupt: %v\n", err)
+		}
 	}
 
 	return nil
