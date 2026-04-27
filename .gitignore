@@ -1,0 +1,23 @@
+# Local CLI binaries and build outputs
+/stash
+/bin/
+/build/
+/dist/
+
+# Go test and coverage artifacts
+*.test
+*.out
+coverage.*
+
+# Local scratch files
+/tmp/
+/.tmp/
+
+# Environment files
+.env
+.env.*
+
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
