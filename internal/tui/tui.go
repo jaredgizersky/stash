@@ -16,6 +16,7 @@ import (
 	"github.com/jaredgizersky/stash/internal/codex"
 	"github.com/jaredgizersky/stash/internal/config"
 	"github.com/jaredgizersky/stash/internal/store"
+	"github.com/muesli/termenv"
 )
 
 type view int
@@ -936,7 +937,17 @@ func relativeDate(t time.Time) string {
 
 func Run(sessions []claude.Session, active []claude.ActiveSession, stashIdx *store.StashIndex, cwd string, showAll bool) (string, string, string, error) {
 	m := New(sessions, active, stashIdx, cwd, showAll)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	options := []tea.ProgramOption{}
+	if os.Getenv("STASH_FORCE_COLOR") != "" {
+		lipgloss.SetColorProfile(termenv.TrueColor)
+	}
+	if os.Getenv("STASH_FORCE_STDIN") != "" {
+		options = append(options, tea.WithInput(os.Stdin))
+	}
+	if os.Getenv("STASH_NO_ALT_SCREEN") == "" {
+		options = append(options, tea.WithAltScreen())
+	}
+	p := tea.NewProgram(m, options...)
 	result, err := p.Run()
 	if err != nil {
 		return "", "", "", err

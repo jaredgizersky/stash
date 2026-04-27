@@ -1,0 +1,9 @@
+{
+  "pid": 4243,
+  "sessionId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  "cwd": "/Users/jared/dev/stash",
+  "startedAt": 1777317000000,
+  "kind": "claude",
+  "entrypoint": "claude",
+  "name": "Config cleanup"
+}

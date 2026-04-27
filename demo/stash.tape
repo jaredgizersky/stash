@@ -5,24 +5,34 @@ Set Width 1200
 Set Height 760
 Set TypingSpeed 35ms
 
-Type "HOME=$PWD/demo/home /tmp/stash-demo --all"
+Type "stash"
 Enter
-Sleep 1s
+Sleep 1200ms
 
 Type "j"
 Sleep 350ms
 Type "j"
-Sleep 350ms
+Sleep 500ms
 
-Type "/"
-Type "oss"
 Enter
-Sleep 700ms
-
-Right
-Sleep 500ms
-Right
-Sleep 500ms
-Tab
-Sleep 500ms
+Sleep 1500ms
 Type "q"
+Sleep 500ms
+
+Type "r"
+Sleep 1200ms
+
+Type "stash"
+Enter
+Sleep 900ms
+Right
+Sleep 500ms
+Type "j"
+Sleep 350ms
+Type "j"
+Sleep 500ms
+
+Enter
+Sleep 1500ms
+Enter
+Sleep 1200ms

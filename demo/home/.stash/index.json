@@ -3,17 +3,33 @@
     {
       "sessionId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       "name": "OSS prep checklist",
-      "projectPath": "/Users/demo/stash",
+      "projectPath": "/Users/jared/dev/stash",
       "gitBranch": "main",
       "stashedAt": "2026-04-27T16:05:00Z",
       "source": "claude"
     },
     {
+      "sessionId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "name": "Config cleanup",
+      "projectPath": "/Users/jared/dev/stash",
+      "gitBranch": "config-toml",
+      "stashedAt": "2026-04-27T20:15:00Z",
+      "source": "claude"
+    },
+    {
       "sessionId": "11111111-1111-4111-8111-111111111111",
       "name": "Product search ranking cleanup",
-      "projectPath": "/Users/demo/stash",
+      "projectPath": "/Users/jared/dev/stash",
       "gitBranch": "rank-fixtures",
       "stashedAt": "2026-04-27T18:05:00Z",
+      "source": "codex"
+    },
+    {
+      "sessionId": "33333333-3333-4333-8333-333333333333",
+      "name": "Parser compatibility fixtures",
+      "projectPath": "/Users/jared/dev/stash",
+      "gitBranch": "parser-fixtures",
+      "stashedAt": "2026-04-27T19:00:00Z",
       "source": "codex"
     }
   ]

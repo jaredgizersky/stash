@@ -1,3 +1,0 @@
-{"timestamp":"2026-04-27T19:00:00Z","type":"session_meta","payload":{"id":"22222222-2222-4222-8222-222222222222","timestamp":"2026-04-27T19:00:00Z","cwd":"/Users/demo/stash","originator":"codex_cli_rs","cli_version":"0.107.0","model_provider":"openai"}}
-{"timestamp":"2026-04-27T19:00:01Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Can we add GoReleaser?"}]}}
-{"timestamp":"2026-04-27T19:00:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Yes. A tag-triggered GoReleaser workflow gives you release archives without broad CI."}]}}

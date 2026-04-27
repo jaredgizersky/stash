@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-bin="$repo/demo/.bin/stash"
+bin="${TMPDIR:-/tmp}/stash-demo-bin/stash"
 
 mkdir -p "$(dirname "$bin")"
 GOCACHE="${TMPDIR:-/tmp}/stash-demo-gocache" \
