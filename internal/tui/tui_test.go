@@ -1,8 +1,12 @@
 package tui
 
-import "testing"
+import (
+	"testing"
 
-func TestShouldSkipClaudeResumePermissions(t *testing.T) {
+	"github.com/jaredgizersky/stash/internal/config"
+)
+
+func TestShouldDangerouslySkipPermissionsFromEnv(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -18,9 +22,9 @@ func TestShouldSkipClaudeResumePermissions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(claudeResumeSkipPermissionsEnv, tt.value)
-			if got := shouldSkipClaudeResumePermissions(); got != tt.want {
-				t.Fatalf("shouldSkipClaudeResumePermissions() = %v, want %v", got, tt.want)
+			t.Setenv(config.DangerouslySkipPermissionsEnv, tt.value)
+			if got := shouldDangerouslySkipPermissions(); got != tt.want {
+				t.Fatalf("shouldDangerouslySkipPermissions() = %v, want %v", got, tt.want)
 			}
 		})
 	}

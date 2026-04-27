@@ -152,6 +152,7 @@ The TUI routes this automatically when you resume a Codex session. Codex message
 `stash` reads and writes local files only:
 
 - `~/.stash/index.json`: sessions explicitly saved with `stash`
+- `~/.stash/config.toml`: optional local configuration
 - `~/.stash/session-cache.json`: Claude session metadata cache
 - `~/.stash/codex-cache.json`: Codex message-count cache
 - `~/.claude/projects/*/*.jsonl`: Claude Code session transcripts
@@ -184,10 +185,16 @@ It does read local Claude Code and Codex history files, so transcript previews m
 
 The Claude Code hook intentionally intercepts prompts that begin with `stash`. Those prompts are blocked from reaching Claude and are used as local session-management commands instead.
 
-By default, resuming a Claude Code session runs `claude --resume <session-id>`. To also pass Claude's `--dangerously-skip-permissions` flag, set:
+By default, `stash` resumes sessions without bypassing tool permissions or sandboxing. To resume Claude with `--dangerously-skip-permissions` and Codex with `--yolo`, create `~/.stash/config.toml`:
+
+```toml
+dangerously_skip_permissions = true
+```
+
+For a one-off shell, you can also set:
 
 ```sh
-export STASH_CLAUDE_RESUME_DANGEROUSLY_SKIP_PERMISSIONS=1
+export STASH_YOLO=1
 ```
 
 ## Compatibility

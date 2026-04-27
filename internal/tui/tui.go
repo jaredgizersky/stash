@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jaredgizersky/stash/internal/claude"
 	"github.com/jaredgizersky/stash/internal/codex"
+	"github.com/jaredgizersky/stash/internal/config"
 	"github.com/jaredgizersky/stash/internal/store"
 )
 
@@ -27,8 +28,6 @@ const (
 )
 
 var tabOrder = []view{viewStash, viewHistory, viewActive}
-
-const claudeResumeSkipPermissionsEnv = "STASH_CLAUDE_RESUME_DANGEROUSLY_SKIP_PERMISSIONS"
 
 type Model struct {
 	sessions   []claude.Session
@@ -959,7 +958,12 @@ func Resume(sessionID, cwd, source string) error {
 		if err != nil {
 			return err
 		}
-		return syscall.Exec(bin, []string{"codex", "resume", sessionID}, os.Environ())
+		args := []string{"codex", "resume"}
+		if shouldDangerouslySkipPermissions() {
+			args = append(args, "--yolo")
+		}
+		args = append(args, sessionID)
+		return syscall.Exec(bin, args, os.Environ())
 	}
 
 	bin, err := findBinary("claude")
@@ -967,19 +971,19 @@ func Resume(sessionID, cwd, source string) error {
 		return err
 	}
 	args := []string{"claude", "--resume", sessionID}
-	if shouldSkipClaudeResumePermissions() {
+	if shouldDangerouslySkipPermissions() {
 		args = append(args, "--dangerously-skip-permissions")
 	}
 	return syscall.Exec(bin, args, os.Environ())
 }
 
-func shouldSkipClaudeResumePermissions() bool {
-	switch strings.ToLower(os.Getenv(claudeResumeSkipPermissionsEnv)) {
-	case "1", "true", "yes", "on":
-		return true
-	default:
+func shouldDangerouslySkipPermissions() bool {
+	enabled, err := config.DangerouslySkipPermissions()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stash: failed to load config: %v\n", err)
 		return false
 	}
+	return enabled
 }
 
 func findBinary(name string) (string, error) {
