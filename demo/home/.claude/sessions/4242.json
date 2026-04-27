@@ -1,0 +1,9 @@
+{
+  "pid": 4242,
+  "sessionId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "cwd": "/Users/demo/stash",
+  "startedAt": 1776010800000,
+  "kind": "claude",
+  "entrypoint": "claude",
+  "name": "OSS prep checklist"
+}

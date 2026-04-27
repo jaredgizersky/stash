@@ -2,6 +2,8 @@
 
 `stash` is a terminal UI for bookmarking, browsing, previewing, and resuming local Claude Code and Codex sessions.
 
+![stash TUI demo](docs/demo.gif)
+
 It has three views:
 
 - **Stash**: sessions you saved

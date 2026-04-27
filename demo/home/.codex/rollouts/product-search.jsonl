@@ -1,0 +1,4 @@
+{"timestamp":"2026-04-27T18:00:00Z","type":"session_meta","payload":{"id":"11111111-1111-4111-8111-111111111111","timestamp":"2026-04-27T18:00:00Z","cwd":"/Users/demo/stash","originator":"codex_cli_rs","cli_version":"0.107.0","model_provider":"openai"}}
+{"timestamp":"2026-04-27T18:00:01Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Can you clean up the product search ranking?"}]}}
+{"timestamp":"2026-04-27T18:00:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"I would pin the compatibility fixtures first, then simplify the ranking path."}]}}
+{"timestamp":"2026-04-27T18:00:03Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"go test ./internal/codex\",\"workdir\":\"/Users/demo/stash\"}"}}

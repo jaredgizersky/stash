@@ -12,6 +12,10 @@ coverage.*
 # Local scratch files
 /tmp/
 /.tmp/
+/demo/.bin/
+/demo/home/.stash/*cache.json
+/demo/home/Library/
+/demo/home/go/
 
 # Environment files
 .env

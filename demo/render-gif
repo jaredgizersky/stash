@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+cleanup() {
+	rm -rf "$repo/demo/.bin" "$repo/demo/home/Library" "$repo/demo/home/go"
+	rm -f "$repo/demo/home/.stash/session-cache.json" "$repo/demo/home/.stash/codex-cache.json"
+}
+trap cleanup EXIT
+cleanup
+
+GOCACHE="${TMPDIR:-/tmp}/stash-demo-gocache" \
+	GOMODCACHE="${TMPDIR:-/tmp}/stash-demo-modcache" \
+	GOPATH="${TMPDIR:-/tmp}/stash-demo-gopath" \
+	GOTELEMETRY=off \
+	go build -o /tmp/stash-demo "$repo/cmd/stash"
+
+cd "$repo"
+vhs demo/stash.tape
