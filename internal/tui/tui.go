@@ -28,6 +28,8 @@ const (
 
 var tabOrder = []view{viewStash, viewHistory, viewActive}
 
+const claudeResumeSkipPermissionsEnv = "STASH_CLAUDE_RESUME_DANGEROUSLY_SKIP_PERMISSIONS"
+
 type Model struct {
 	sessions   []claude.Session
 	active     []claude.ActiveSession
@@ -964,7 +966,20 @@ func Resume(sessionID, cwd, source string) error {
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(bin, []string{"claude", "--resume", sessionID, "--dangerously-skip-permissions"}, os.Environ())
+	args := []string{"claude", "--resume", sessionID}
+	if shouldSkipClaudeResumePermissions() {
+		args = append(args, "--dangerously-skip-permissions")
+	}
+	return syscall.Exec(bin, args, os.Environ())
+}
+
+func shouldSkipClaudeResumePermissions() bool {
+	switch strings.ToLower(os.Getenv(claudeResumeSkipPermissionsEnv)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func findBinary(name string) (string, error) {

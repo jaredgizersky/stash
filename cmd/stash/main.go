@@ -21,7 +21,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "stash",
 		Short: "Manage and stash Claude sessions",
-		Long:  "A TUI for browsing, naming, and resuming Claude Code sessions.",
+		Long:  "A TUI for browsing, naming, and resuming Claude Code sessions.\n\nSet STASH_CLAUDE_RESUME_DANGEROUSLY_SKIP_PERMISSIONS=1 to pass --dangerously-skip-permissions when resuming Claude sessions.",
 		RunE:  runTUI,
 	}
 
