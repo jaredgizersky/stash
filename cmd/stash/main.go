@@ -20,24 +20,16 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "stash",
-		Short: "Manage and stash Claude sessions",
-		Long:  "A TUI for browsing, naming, and resuming Claude Code sessions.\n\nSet dangerously_skip_permissions = true in ~/.stash/config.toml to resume Claude/Codex without approval prompts or sandboxing.",
+		Short: "Manage and stash Claude Code and Codex sessions",
+		Long:  "A TUI for browsing, naming, and resuming Claude Code and Codex sessions.\n\nSet dangerously_skip_permissions = true in ~/.stash/config.toml to resume Claude/Codex without approval prompts or sandboxing.",
 		RunE:  runTUI,
 	}
 
 	rootCmd.Flags().BoolP("all", "a", false, "Show sessions from all projects")
 
-	saveCmd := &cobra.Command{
-		Use:   "save <name>",
-		Short: "Stash the current Claude session with a name",
-		Long:  "Run inside a Claude session via !stash save \"name\" to tag and save the current session.",
-		Args:  cobra.ExactArgs(1),
-		RunE:  runSave,
-	}
-
 	hookCmd := &cobra.Command{
 		Use:    "hook",
-		Short:  "UserPromptSubmit hook handler (called by Claude, not directly)",
+		Short:  "UserPromptSubmit hook handler",
 		Hidden: true,
 		RunE:   runHook,
 	}
@@ -49,7 +41,7 @@ func main() {
 	}
 	listCmd.Flags().BoolP("all", "a", false, "Show sessions from all projects")
 
-	rootCmd.AddCommand(saveCmd, hookCmd, listCmd)
+	rootCmd.AddCommand(hookCmd, listCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -105,47 +97,6 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		}
 		return tui.Resume(sessionID, resumeCwd, source)
 	}
-
-	return nil
-}
-
-func runSave(cmd *cobra.Command, args []string) error {
-	name := args[0]
-
-	sessionID := os.Getenv("CLAUDE_SESSION_ID")
-	if sessionID == "" {
-		return fmt.Errorf("$CLAUDE_SESSION_ID not set — run this inside a Claude session via: !stash save \"%s\"", name)
-	}
-
-	cwd, _ := os.Getwd()
-
-	branch := ""
-	sessions, _ := claude.LoadSessionsForProject(cwd)
-	for _, s := range sessions {
-		if s.SessionID == sessionID {
-			branch = s.GitBranch
-			break
-		}
-	}
-
-	stashIdx, err := store.Load()
-	if err != nil {
-		return fmt.Errorf("loading stash index: %w", err)
-	}
-
-	stashIdx.Add(store.StashEntry{
-		SessionID:   sessionID,
-		Name:        name,
-		ProjectPath: cwd,
-		GitBranch:   branch,
-	})
-
-	if err := store.Save(stashIdx); err != nil {
-		return fmt.Errorf("saving stash index: %w", err)
-	}
-
-	fmt.Printf("Stashed session as \"%s\" (%s)\n", name, sessionID[:8])
-	fmt.Println("Resume later with: stash (TUI) or claude --resume", sessionID[:8])
 
 	return nil
 }

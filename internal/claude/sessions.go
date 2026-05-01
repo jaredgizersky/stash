@@ -23,14 +23,13 @@ type Session struct {
 	GitBranch   string    `json:"gitBranch"`
 	ProjectPath string    `json:"projectPath"`
 	IsSidechain bool      `json:"isSidechain"`
-	Source      string    `json:"source"`      // "claude" or "codex"
+	Source      string    `json:"source"` // "claude" or "codex"
 	Model       string    `json:"model,omitempty"`
 
 	// Enriched
 	Name    string `json:"name,omitempty"` // best name: stash name > agent name > empty
-	Stashed bool   `json:"-"`             // true if session is in the stash index
+	Stashed bool   `json:"-"`              // true if session is in the stash index
 }
-
 
 // ClaudeDir returns the path to ~/.claude
 func ClaudeDir() string {
@@ -106,7 +105,6 @@ func LoadAllSessions() ([]Session, error) {
 
 	return all, nil
 }
-
 
 // loadProjectCached loads sessions for a single project dir, using the cache for
 // JSONL files whose mtime+size haven't changed. Cache misses are scanned in parallel.
@@ -427,7 +425,7 @@ func extractMessageText(msg map[string]interface{}) (string, string) {
 				}
 			case "tool_use":
 				toolParts = append(toolParts, formatToolUse(b))
-			// tool_result: intentionally dropped
+				// tool_result: intentionally dropped
 			}
 		}
 		return strings.Join(textParts, "\n"), strings.Join(toolParts, "\n")
@@ -504,12 +502,15 @@ func shortenPath(p string) string {
 }
 
 func truncate(s string, max int) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.TrimSpace(s)
+	s = singleLine(s)
 	if len(s) <= max {
 		return s
 	}
 	return s[:max] + "..."
+}
+
+func singleLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 // ApplyStashNames stamps stash names and the Stashed flag onto sessions.
@@ -528,10 +529,10 @@ func ApplyStashNames(sessions []Session, nameMap map[string]string, sourceMap ma
 // Title returns the best display title for a session
 func (s *Session) Title() string {
 	if s.Name != "" {
-		return s.Name
+		return singleLine(s.Name)
 	}
 	if s.Summary != "" {
-		return s.Summary
+		return singleLine(s.Summary)
 	}
 	if s.FirstPrompt != "" {
 		return truncate(s.FirstPrompt, 80)

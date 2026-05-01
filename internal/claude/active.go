@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -103,7 +102,7 @@ func (a *ActiveSession) ShortCwd() string {
 // DisplayName returns the best name for this active session
 func (a *ActiveSession) DisplayName() string {
 	if a.Name != "" {
-		return a.Name
+		return singleLine(a.Name)
 	}
 	if a.Linked != nil {
 		t := a.Linked.Title()
@@ -164,8 +163,7 @@ func extractTextFromFirstUserMsg(path string) string {
 }
 
 func truncateStr(s string, max int) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.TrimSpace(s)
+	s = singleLine(s)
 	if len(s) <= max {
 		return s
 	}

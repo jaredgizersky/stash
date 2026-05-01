@@ -1,4 +1,4 @@
-Output docs/demo.gif
+Output demo/demo.gif
 Set Shell "zsh"
 Set FontSize 16
 Set Width 1200

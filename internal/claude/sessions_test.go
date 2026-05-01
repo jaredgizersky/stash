@@ -74,3 +74,27 @@ func TestClaudeCodeVersionedTranscriptSupport(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionTitleIsSingleLine(t *testing.T) {
+	s := Session{
+		Name:        "UserPromptSubmit hook (failed)\nerror: hook returned invalid user prompt",
+		Summary:     "ignored\nsummary",
+		FirstPrompt: "ignored\nprompt",
+	}
+
+	got := s.Title()
+	want := "UserPromptSubmit hook (failed) error: hook returned invalid user prompt"
+	if got != want {
+		t.Fatalf("Title() = %q, want %q", got, want)
+	}
+}
+
+func TestActiveSessionDisplayNameIsSingleLine(t *testing.T) {
+	a := ActiveSession{Name: "working title\nwith\tspacing"}
+
+	got := a.DisplayName()
+	want := "working title with spacing"
+	if got != want {
+		t.Fatalf("DisplayName() = %q, want %q", got, want)
+	}
+}

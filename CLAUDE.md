@@ -5,7 +5,7 @@ CLI/TUI for managing Claude Code and Codex sessions. Lets you name, bookmark ("s
 ## Architecture
 
 ```
-cmd/stash/main.go            CLI entry point (cobra). Subcommands: (default TUI), save, hook, list
+cmd/stash/main.go            CLI entry point (cobra). Subcommands: (default TUI), hook, list
 internal/claude/sessions.go   Session loading from ~/.claude/projects/*/*.jsonl. Parallel scanning with file-level cache (~/.stash/session-cache.json)
 internal/claude/cache.go      mtime+size-based cache for scanned JSONL metadata. Bump cacheVersion const if Session struct changes
 internal/claude/active.go     Reads ~/.claude/sessions/*.json for live processes (PID, alive check, cwd)
@@ -29,17 +29,18 @@ internal/tui/tui.go           Bubble Tea TUI. Three tabs (Stash/History/Active),
 1. `LoadAllSessions()` scans all JSONL files across all project dirs, parallelized, cached by mtime+size
 2. `LoadActiveSessions()` reads `~/.claude/sessions/*.json`, checks PIDs alive via `kill -0`
 3. `LinkTranscripts()` matches active sessions to their transcript Session objects
-4. Stash index (`~/.stash/index.json`) marks which sessions are "stashed" — populated by the hook or `stash save`
+4. Stash index (`~/.stash/index.json`) marks which sessions are "stashed" — populated by the hook
 5. TUI enriches sessions with stash names, renders three tabs
 
 ## The hook
 
-Distributed as a Claude Code plugin via `hooks/hooks.json`. The `UserPromptSubmit` hook calls `stash hook` (must be on PATH). When user types `stash <name>`:
+Distributed as a Claude Code plugin via `hooks/hooks.json`. The `UserPromptSubmit` hook calls `stash hook` (must be on PATH). When the user types `stash` or `stash <name>`:
 
 1. Hook blocks the prompt (Claude never sees it)
-2. Sets `sessionTitle` natively via hook response (Claude writes `agent-name` to JSONL)  
-3. Writes session to `~/.stash/index.json`
-4. Finds Claude's PID from `~/.claude/sessions/*.json` and schedules `sleep 0.5 && kill -INT <pid>` to exit the session
+2. Uses the provided name, or the current session name for bare `stash`
+3. Sets `sessionTitle` natively for Claude; for Codex, appends to `session_index.jsonl` and updates the thread title in SQLite
+4. Writes session to `~/.stash/index.json`
+5. Schedules `sleep 0.5 && kill -INT <pid>` to exit the session
 
 ## Build & install
 
