@@ -35,6 +35,21 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+brews:
+  - name: stash
+    ids:
+      - stash
+    repository:
+      owner: jaredgizersky
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/jaredgizersky/stash"
+    description: "TUI for bookmarking and resuming Claude Code and Codex sessions"
+    license: "MIT"
+    test: |
+      assert_match "Usage:", shell_output("#{bin}/stash --help")
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
@@ -44,4 +59,3 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
-

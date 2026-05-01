@@ -13,13 +13,13 @@ It has three views:
 ## Install
 
 ```sh
-go install github.com/jaredgizersky/stash/cmd/stash@latest
+brew install jaredgizersky/tap/stash
 ```
 
-Make sure your Go bin directory is on `PATH`:
+Or build from source with Go:
 
 ```sh
-export PATH="$(go env GOPATH)/bin:$PATH"
+go install github.com/jaredgizersky/stash/cmd/stash@latest
 ```
 
 ## Use
