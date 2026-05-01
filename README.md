@@ -32,19 +32,34 @@ stash list   # print saved/recent sessions
 
 Claude Code and Codex history show up automatically from local session files.
 
-To type `stash` or `stash <name>` inside an agent session and have it save, rename, and exit that session, install a `UserPromptSubmit` hook that runs:
+## Agent hooks
 
-```sh
-stash hook
-```
+Install the agent hook to type `stash` or `stash <name>` inside a session and have it save, name, and exit that session.
 
-The Claude Code plugin installs that hook:
+For Claude Code:
 
 ```sh
 /plugin marketplace add jaredgizersky/stash
 /plugin install stash@stash
 /reload-plugins
 ```
+
+For Codex:
+
+```sh
+codex plugin marketplace add jaredgizersky/stash
+```
+
+Codex also requires hooks and plugin-provided hooks to be enabled in
+`~/.codex/config.toml`:
+
+```toml
+[features]
+codex_hooks = true
+codex_plugin_hooks = true
+```
+
+Restart Codex after changing the config.
 
 ## Keys
 

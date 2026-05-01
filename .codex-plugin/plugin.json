@@ -1,0 +1,39 @@
+{
+  "name": "stash",
+  "version": "0.1.0",
+  "description": "Bookmark, browse, and resume local Claude Code and Codex sessions from a TUI.",
+  "author": {
+    "name": "Jared Gizersky",
+    "url": "https://github.com/jaredgizersky"
+  },
+  "homepage": "https://github.com/jaredgizersky/stash",
+  "repository": "https://github.com/jaredgizersky/stash",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "claude-code",
+    "sessions",
+    "tui",
+    "hooks"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "stash",
+    "shortDescription": "Bookmark and resume local agent sessions",
+    "longDescription": "Install the stash hook so typing `stash` or `stash <name>` inside an agent session saves the current session, names it, and exits. Use the stash TUI to browse, preview, and resume saved Claude Code and Codex sessions.",
+    "developerName": "Jared Gizersky",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/jaredgizersky/stash",
+    "defaultPrompt": [
+      "Install stash for local session bookmarking",
+      "Show me how to use stash with Codex"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

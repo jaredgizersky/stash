@@ -12,6 +12,7 @@ coverage.*
 # Local scratch files
 /tmp/
 /.tmp/
+/local-marketplace-root/
 /demo/.bin/
 /demo/home/.stash/*cache.json
 /demo/home/Library/
