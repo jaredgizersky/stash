@@ -1,6 +1,6 @@
 {
   "name": "stash",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bookmark, browse, and resume Claude Code sessions from a TUI",
   "author": {
     "name": "Jared Gizersky"
