@@ -1,0 +1,25 @@
+internal/tui/tui.go
+  3703900e1fcd5a97 94-96,608,623-627
+cmd/stash/main.go
+  3703900e1fcd5a97 10,21-36,39-43,45-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "d084d92b0bcfdd2e7fcd4654a13ed41f44c82f7b",
+  "prompts": {
+    "3703900e1fcd5a97": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96346bb7-8335-464d-a12d-8064f59f19ac",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Jared Gizersky",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 8,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    }
+  }
+}
