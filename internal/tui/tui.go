@@ -91,6 +91,9 @@ func (m *Model) refilter() {
 		if !s.Stashed {
 			continue
 		}
+		if !m.showAll && s.ProjectPath != m.cwd {
+			continue
+		}
 		if !m.matchSession(s, query) {
 			continue
 		}
@@ -602,8 +605,7 @@ func (m Model) viewSessionList() string {
 	b.WriteString(m.renderTabs())
 	b.WriteString("\n")
 
-	// Stash tab always shows project column
-	showProject := m.showAll || m.currentView == viewStash
+	showProject := m.showAll
 	b.WriteString(m.renderSessionHeader(showProject))
 	b.WriteString("\n")
 	b.WriteString(headerStyle.Render(strings.Repeat("─", min(m.width-2, 140))))
@@ -618,7 +620,11 @@ func (m Model) viewSessionList() string {
 
 	listH := m.listHeight()
 	if len(items) == 0 && m.currentView == viewStash {
-		b.WriteString(dimStyle.Render("  No stashed sessions. Type \"stash <name>\" in a Claude session to save one."))
+		hint := "  No stashed sessions. Type \"stash <name>\" in a Claude session to save one."
+		if !m.showAll {
+			hint = "  No stashed sessions in this directory. Press tab to view all."
+		}
+		b.WriteString(dimStyle.Render(hint))
 		b.WriteString("\n")
 		for i := 1; i < listH; i++ {
 			b.WriteString("\n")

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -17,14 +18,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func buildVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "dev"
+	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	for _, s := range info.Settings {
+		if s.Key == "vcs.revision" && len(s.Value) >= 7 {
+			return "dev-" + s.Value[:7]
+		}
+	}
+	return "dev"
+}
+
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "stash",
-		Short: "Manage and stash Claude Code and Codex sessions",
-		Long:  "A TUI for browsing, naming, and resuming Claude Code and Codex sessions.\n\nSet dangerously_skip_permissions = true in ~/.stash/config.toml to resume Claude/Codex without approval prompts or sandboxing.",
-		RunE:  runTUI,
+		Use:     "stash",
+		Short:   "Manage and stash Claude Code and Codex sessions",
+		Long:    "A TUI for browsing, naming, and resuming Claude Code and Codex sessions.\n\nSet dangerously_skip_permissions = true in ~/.stash/config.toml to resume Claude/Codex without approval prompts or sandboxing.",
+		Version: buildVersion(),
+		RunE:    runTUI,
 	}
-
+	rootCmd.SetVersionTemplate("stash {{.Version}}\n")
+	rootCmd.Flags().BoolP("version", "v", false, "Show version and exit")
 	rootCmd.Flags().BoolP("all", "a", false, "Show sessions from all projects")
 
 	hookCmd := &cobra.Command{
